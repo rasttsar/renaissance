@@ -1,0 +1,12 @@
+name: build
+on: [push, pull_request]
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    container: openjdk:11.0.11-jdk
+    steps:
+    - uses: actions/checkout@v2
+    - name: Assembly
+      shell: bash
+      run: |
+        ./tools/sbt/bin/sbt assembly

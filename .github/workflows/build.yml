@@ -21,8 +21,6 @@ jobs:
         shell: bash
         run: |
           ./tools/sbt/bin/sbt assembly
-
-jobs:
   jdks-on-linux:
     strategy:
       matrix:

@@ -5,10 +5,19 @@ jobs:
     runs-on: ubuntu-latest
     container: openjdk:11.0.11-jdk
     steps:
-    - uses: actions/checkout@v2
-    - name: Assembly
-      shell: bash
-      run: |
-        java -version
-        javac -version
-        ./tools/sbt/bin/sbt assembly
+      - uses: actions/checkout@v2
+      - name: Cache SBT
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+      - name: Environment configuration
+        shell: bash
+        run: |
+          java -version && javac -version
+      - name: Assembly
+        shell: bash
+        run: |
+          ./tools/sbt/bin/sbt assembly

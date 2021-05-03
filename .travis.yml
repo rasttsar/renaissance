@@ -101,8 +101,8 @@ jobs:
 
 stages:
   - "Basic checks"
-  - bundle
-  - benchmark
+  #- bundle
+  #- benchmark
 
 before_script:
   # For us, the default options are broken as they pass "-v"

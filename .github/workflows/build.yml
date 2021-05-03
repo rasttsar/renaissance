@@ -1,19 +1,14 @@
 name: build
 on: [push, pull_request]
 jobs:
-  jdks-on-linux:
+  linux:
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-            image: openjdk:11.0.11-jdk
-          - os: ubuntu-latest
-            image: adoptopenjdk:11.0.10_9-jdk-openj9-0.24.0
-          - os: windows-latest
-            image: openjdk:11.0.11-jdk
-#          - os: ubuntu-latest
-#            image: openjdk:10.0.2-jdk
-    runs-on: ${{ matrix.os }}
+        image:
+          - openjdk:11.0.11-jdk
+          - adoptopenjdk:11.0.10_9-jdk-openj9-0.24.0
+          - openjdk:10.0.2-jdk
+    runs-on: ubuntu-latest
     container: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v2
@@ -24,6 +19,27 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+      - name: Environment configuration
+        shell: bash
+        run: |
+          java -version && javac -version
+#      - name: Assembly
+#        shell: bash
+#        run: |
+#          ./tools/sbt/bin/sbt assembly
+
+  windows:
+    strategy:
+      matrix:
+        java: [ '8', '11', '13', '15' ]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup correct Java version
+        uses: actions/setup-java@v2
+        with:
+          distribution: adopt
+          java-version: ${{ matrix.java }}
       - name: Environment configuration
         shell: bash
         run: |

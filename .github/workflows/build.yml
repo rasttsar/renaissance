@@ -1,32 +1,18 @@
 name: build
 on: [push, pull_request]
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    container: openjdk:11.0.11-jdk
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache SBT
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
-      - name: Environment configuration
-        shell: bash
-        run: |
-          java -version && javac -version
-      - name: Assembly
-        shell: bash
-        run: |
-          ./tools/sbt/bin/sbt assembly
   jdks-on-linux:
     strategy:
       matrix:
-        image:
-          - openjdk:11.0.11-jdk
-          - openjdk:10.0.2-jdk
+        include:
+          - os: ubuntu-latest
+            image: openjdk:11.0.11-jdk
+          - os: ubuntu-latest
+            image: adoptopenjdk:11.0.10_9-jdk-openj9-0.24.0
+          - os: windows-latest
+            image: openjdk:11.0.11-jdk
+#          - os: ubuntu-latest
+#            image: openjdk:10.0.2-jdk
     runs-on: ubuntu-latest
     container: ${{ matrix.image }}
     steps:
@@ -42,7 +28,7 @@ jobs:
         shell: bash
         run: |
           java -version && javac -version
-      - name: Assembly
-        shell: bash
-        run: |
-          ./tools/sbt/bin/sbt assembly
+#      - name: Assembly
+#        shell: bash
+#        run: |
+#          ./tools/sbt/bin/sbt assembly

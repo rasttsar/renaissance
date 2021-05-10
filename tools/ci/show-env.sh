@@ -8,5 +8,5 @@ java -version
 javac -version
 git --version
 
-cat /os/release
+cat /etc/os-release
 uname -a

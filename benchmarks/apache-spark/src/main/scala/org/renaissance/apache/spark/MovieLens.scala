@@ -23,41 +23,41 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.io.Source
+import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 
 @Name("movie-lens")
 @Group("apache-spark")
 @Summary("Recommends movies using the ALS algorithm.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "input_file", defaultValue = "/ratings.csv"),
-    new Parameter(name = "als_ranks", defaultValue = "8, 12"),
-    new Parameter(name = "als_lambdas", defaultValue = "0.1, 10.0"),
-    new Parameter(name = "als_iterations", defaultValue = "10, 20")
+@Parameter(
+  name = "spark_executor_count",
+  defaultValue = "4",
+  summary = "Number of executor instances."
+)
+@Parameter(
+  name = "spark_executor_thread_count",
+  defaultValue = "4",
+  summary = "Number of threads per executor."
+)
+@Parameter(name = "input_file", defaultValue = "/ratings.csv")
+@Parameter(name = "als_ranks", defaultValue = "8, 12")
+@Parameter(name = "als_lambdas", defaultValue = "0.1, 10.0")
+@Parameter(name = "als_iterations", defaultValue = "10, 20")
+@Configuration(
+  name = "test",
+  settings = Array(
+    "input_file = /ratings-small.csv",
+    "als_ranks = 12",
+    "als_lambdas = 10.0",
+    "als_iterations = 10"
   )
 )
-@Configurations(
-  Array(
-    new Configuration(
-      name = "test",
-      settings = Array(
-        "input_file = /ratings-small.csv",
-        "als_ranks = 12",
-        "als_lambdas = 10.0",
-        "als_iterations = 10"
-      )
-    ),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "jmh")
 final class MovieLens extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
-
-  private val THREAD_COUNT = 4
 
   private var inputFileParam: String = _
 
@@ -66,9 +66,6 @@ final class MovieLens extends Benchmark with SparkUtil {
   private var alsLambdasParam: List[Double] = _
 
   private var alsIterationsParam: List[Int] = _
-
-  // TODO: Unify handling of scratch directories throughout the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   var sc: SparkContext = _
 
@@ -87,8 +84,6 @@ final class MovieLens extends Benchmark with SparkUtil {
   val moviesBigFile = bigFilesPath.resolve("movies.txt")
 
   val ratingsBigFile = bigFilesPath.resolve("ratings.txt")
-
-  var tempDirPath: Path = _
 
   class MovieLensHelper {
     var movies: Map[Int, String] = _
@@ -265,11 +260,11 @@ final class MovieLens extends Benchmark with SparkUtil {
     }
 
     def verifyCaches() = {
-      ensureCaching(ratings)
-      ensureCaching(personalRatingsRDD)
-      ensureCaching(training)
-      ensureCaching(test)
-      ensureCaching(validation)
+      ensureCached(ratings)
+      ensureCached(personalRatingsRDD)
+      ensureCached(training)
+      ensureCached(test)
+      ensureCached(validation)
     }
   }
 
@@ -278,15 +273,14 @@ final class MovieLens extends Benchmark with SparkUtil {
     Logger.getLogger("org.eclipse.jetty.server").setLevel(Level.OFF)
   }
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    inputFileParam = c.stringParameter("input_file")
-    alsRanksParam = c.stringParameter("als_ranks").split(",").map(_.trim.toInt).toList
-    alsLambdasParam = c.stringParameter("als_lambdas").split(",").map(_.trim.toDouble).toList
-    alsIterationsParam = c.stringParameter("als_iterations").split(",").map(_.trim.toInt).toList
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    inputFileParam = bc.parameter("input_file").value
+    alsRanksParam = bc.parameter("als_ranks").toList(_.toInt).asScala.toList
+    alsLambdasParam = bc.parameter("als_lambdas").toList(_.toDouble).asScala.toList
+    alsIterationsParam = bc.parameter("als_iterations").toList(_.toInt).asScala.toList
 
-    tempDirPath = c.generateTempDir("movie_lens")
     setUpLogger()
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "movie-lens")
+    sc = setUpSparkContext(bc)
     sc.setCheckpointDir(checkpointPath.toString)
     loadData()
     // Split ratings into train (60%), validation (20%), and test (20%) based on the
@@ -317,7 +311,7 @@ final class MovieLens extends Benchmark with SparkUtil {
     )
   }
 
-  override def run(c: BenchmarkContext): BenchmarkResult = {
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
     helper.trainModels(alsRanksParam, alsLambdasParam, alsIterationsParam)
     val recommendations = helper.recommendMovies()
 
@@ -325,9 +319,8 @@ final class MovieLens extends Benchmark with SparkUtil {
     Validators.dummy(recommendations)
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
+  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
     tearDownSparkContext(sc)
-    c.deleteTempDir(tempDirPath)
   }
 
 }

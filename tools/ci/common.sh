@@ -10,7 +10,7 @@ set -o errexit
 # set -o xtrace
 
 # Project root directory
-ROOT_DIR="$(git rev-parse --show-toplevel  || dirname "$0" )"
+ROOT_DIR="$(git rev-parse --show-toplevel  || realpath "$( dirname "$0" )/../../" )"
 
 # Cache directory for files we explicitly produce
 CACHE_DIR="$HOME/.prebuilt"

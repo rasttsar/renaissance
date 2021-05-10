@@ -8,7 +8,7 @@ jobs:
           #- openjdk:10.0.2-jdk
           #- openjdk:11.0.11-jdk
           - adoptopenjdk:11.0.10_9-jdk-openj9-0.24.0
-          #- openjdk:12.0.2-jdk
+          - openjdk:12.0.2-jdk
           #- openjdk:13.0.2-jdk
           #- openjdk:14.0.2-jdk
           #- openjdk:15.0.2-jdk

@@ -8,6 +8,8 @@ if [ -z "${GITHUB_ACTION:-}" ]; then
 fi
 
 install_on_oracle_linux() {
+    # This is really ugly but it is much faster for CI
+    # as calling yum would refresh the database first
     case "$1" in
         git)
             rpm -Uvh --nodeps https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/git-1.8.3.1-13.el7.x86_64.rpm

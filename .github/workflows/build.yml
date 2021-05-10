@@ -26,15 +26,34 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+
       - name: Environment configuration
         shell: bash
-        run: |
-          java -version && javac -version
-      - name: Assembly
+        run: "java -version && javac -version"
+
+      - name: Build base
         shell: bash
-        run: |
-          ./tools/sbt/bin/sbt assembly
-          java -jar ./target/renaissance-gpl-0.11.0.jar --raw-list
+        run: "tools/ci/build-base.sh"
+
+      - name: Build JMH
+        shell: bash
+        run: "tools/ci/build-jmh.sh"
+
+      - name: Stop SBT
+        shell: bash
+        run: "tools/ci/stop-sbt.sh"
+
+      - name: Check JMH
+        shell: bash
+        run: "tools/ci/check-jmh.sh"
+
+      - name: Run the suite
+        shell: bash
+        run: "tools/ci/bench-base.sh"
+
+      - name: Run the suite with JMH
+        shell: bash
+        run: "tools/ci/bench-jmh.sh"
 
   other:
     strategy:

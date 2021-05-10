@@ -8,11 +8,17 @@ if [ -z "${GITHUB_ACTION:-}" ]; then
 fi
 
 install_on_oracle_linux() {
-    if [ "$1" = "git" ]; then
-        rpm -Uvh --nodeps https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/git-1.8.3.1-13.el7.x86_64.rpm
-    else
-        yum install --assumeyes "$1"
-    fi
+    case "$1" in
+        git)
+            rpm -Uvh --nodeps https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/git-1.8.3.1-13.el7.x86_64.rpm
+            ;;
+        unzip)
+            rpm -Uvh --nodeps  https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/unzip-6.0-21.el7.x86_64.rpm
+            ;;
+        *)
+            yum install --assumeyes "$1"
+            ;;
+    esac
 }
 
 install_on_unknown() {
@@ -38,3 +44,4 @@ case "$distribution_id" in
 esac
 
 git version &>/dev/null || do_install git
+unzip -v &>/dev/null || do_install unzip

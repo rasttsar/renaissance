@@ -6,7 +6,7 @@ set -x
 
 java -version
 javac -version
-git --version
+git --version || echo "Git not installed." >&2
 
 cat /etc/os-release
 uname -a

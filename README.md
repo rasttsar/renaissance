@@ -135,6 +135,10 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `dummy-validation-failing` - A dummy benchmark for testing the harness (fails during validation). (default repetitions: 20)
 
+#### eclipse
+
+- `jdt-compiler` - Runs the Eclipse JDT compiler on a set of source code files. (default repetitions: 60)
+
 #### jdk-concurrent
 
 - `fj-kmeans` - Runs the k-means algorithm using the fork/join framework. (default repetitions: 30)
@@ -334,6 +338,7 @@ requirements) for all the benchmarks:
 | fj-kmeans | APACHE2 | MIT | 1.8 |  |
 | future-genetic | APACHE2 | MIT | 1.8 |  |
 | gauss-mix | APACHE2 | MIT | 1.8 |  |
+| jdt-compiler | EPL1 | GPL3 | 1.8 |  |
 | log-regression | APACHE2 | MIT | 1.8 |  |
 | mnemonics | MIT | MIT | 1.8 |  |
 | movie-lens | APACHE2 | MIT | 1.8 |  |

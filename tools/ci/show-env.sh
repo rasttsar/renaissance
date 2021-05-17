@@ -8,7 +8,7 @@ java -version
 javac -version
 git --version || echo "Git not installed." >&2
 
-cat /etc/os-release
+cat /etc/os-release || echo "/etc/os-release not found" >&2
 uname -a
 
 source "$(dirname "$0")/common.sh"

@@ -79,7 +79,7 @@ public abstract class JmhRenaissanceBenchmark {
       }
 
       System.out.printf(
-        "\n!!!!! %s. Using '%s' instead to avoid failure. !!!!!\n",
+        "\n!!!!! %s Using '%s' to avoid failure. !!!!!\n",
         message, benchInfo.name()
       );
     }

@@ -14,13 +14,12 @@ import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
+import org.renaissance.apache.spark.ResourceUtil.resourceAsLines
 
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import java.util.stream.Collectors
+import scala.jdk.CollectionConverters.asJavaCollectionConverter
 
 @Name("dec-tree")
 @Group("apache-spark")
@@ -56,15 +55,15 @@ final class DecTree extends Benchmark with SparkUtil {
   private var outputClassificationModel: DecisionTreeClassificationModel = _
 
   private def prepareInput(resourcePath: String, copyCount: Int, outputFile: Path): Path = {
-    def loadInputResource() = {
-      val resourceStream = getClass.getResourceAsStream(resourcePath)
-      val reader = new BufferedReader(new InputStreamReader(resourceStream))
-      reader.lines().collect(Collectors.toList())
-    }
+    val lines = resourceAsLines(resourcePath)
 
-    val lines = loadInputResource()
     for (_ <- 0 until copyCount) {
-      Files.write(outputFile, lines, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+      Files.write(
+        outputFile,
+        lines.asJavaCollection,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.APPEND
+      )
     }
 
     outputFile
@@ -72,7 +71,7 @@ final class DecTree extends Benchmark with SparkUtil {
 
   private def loadData(inputFile: Path): DataFrame = {
     val sqlContext = new SQLContext(sparkContext)
-    sqlContext.read.format("libsvm").load(inputFile.toString).cache()
+    sqlContext.read.format("libsvm").load(inputFile.toString)
   }
 
   def constructPipeline(): Pipeline = {
@@ -114,7 +113,7 @@ final class DecTree extends Benchmark with SparkUtil {
       bc.scratchDirectory().resolve("input.txt")
     )
 
-    inputTrainingData = loadData(inputFile)
+    inputTrainingData = ensureCached(loadData(inputFile))
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {

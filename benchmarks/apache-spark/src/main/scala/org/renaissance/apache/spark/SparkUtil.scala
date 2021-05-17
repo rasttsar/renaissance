@@ -1,13 +1,18 @@
 package org.renaissance.apache.spark
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.SparkConf
+import org.apache.log4j.Level
+import org.apache.log4j.Logger
 import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Dataset
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.storage.StorageLevel
 import org.renaissance.Benchmark.Name
 import org.renaissance.BenchmarkContext
 
 import java.nio.file.Files
 import java.nio.file.Path
+import scala.reflect.ClassTag
 
 /**
  * A common trait for all Spark benchmarks. Provides shared Spark
@@ -24,9 +29,15 @@ trait SparkUtil {
   private val winutilsName = "winutils.exe"
   private val winutilsSize = 109568
 
-  protected var sparkContext: SparkContext = _
+  private val sparkLogLevel = Level.WARN
+  private val jettyLogLevel = Level.WARN
 
-  def setUpSparkContext(bc: BenchmarkContext): SparkContext = {
+  protected var sparkSession: SparkSession = _
+  protected def sparkContext: SparkContext = sparkSession.sparkContext
+
+  def setUpSparkContext(bc: BenchmarkContext, useCheckpointDir: Boolean = false): Unit = {
+    setUpLoggers(sparkLogLevel, jettyLogLevel)
+
     val scratchDir = bc.scratchDirectory()
     setUpHadoop(scratchDir.resolve("hadoop"))
 
@@ -44,30 +55,47 @@ trait SparkUtil {
     val executorCount = bc.parameter("spark_executor_count").toPositiveInteger
     val threadCount = bc.parameter("spark_executor_thread_count").toPositiveInteger
 
-    val conf = new SparkConf()
-      .setAppName(benchmarkName)
-      .setMaster(s"local[$threadCount]")
-      .set("spark.driver.host", "localhost")
-      .set("spark.driver.bindAddress", "127.0.0.1")
-      .set("spark.local.dir", scratchDir.toString)
-      .set("spark.port.maxRetries", portAllocationMaxRetries.toString)
-      .set("spark.executor.instances", s"$executorCount")
-      .set("spark.sql.warehouse.dir", scratchDir.resolve("warehouse").toString)
+    sparkSession = SparkSession
+      .builder()
+      .appName(benchmarkName)
+      .master(s"local[$threadCount]")
+      .config("spark.driver.host", "localhost")
+      .config("spark.driver.bindAddress", "127.0.0.1")
+      .config("spark.local.dir", scratchDir.toString)
+      .config("spark.port.maxRetries", portAllocationMaxRetries.toString)
+      .config("spark.executor.instances", s"$executorCount")
+      .config("spark.sql.warehouse.dir", scratchDir.resolve("warehouse").toString)
+      .getOrCreate()
 
-    sparkContext = new SparkContext(conf)
-    sparkContext.setLogLevel("ERROR")
-    sparkContext
+    if (useCheckpointDir) {
+      sparkContext.setCheckpointDir(scratchDir.resolve("checkpoints").toString)
+    }
+
+    sparkContext.setLogLevel(sparkLogLevel.toString)
   }
 
-  def tearDownSparkContext(sc: SparkContext): Unit = {
-    if (sc != null) {
-      sc.stop()
-    }
+  def createRddFromCsv[T: ClassTag](
+    file: Path,
+    header: Boolean,
+    delimiter: String,
+    mapper: Array[String] => T
+  ) = {
+    val lines = textFileAsRdd(file)
+    val linesWithoutHeader = if (header) dropFirstLine(lines) else lines
+    linesWithoutHeader.map(_.split(delimiter)).map[T](mapper).filter(_ != null)
+  }
+
+  private def textFileAsRdd(file: Path): RDD[String] = {
+    sparkContext.textFile(file.toString)
+  }
+
+  private def dropFirstLine(lines: RDD[String]): RDD[String] = {
+    val first = lines.first
+    lines.filter { line => line != first }
   }
 
   def tearDownSparkContext(): Unit = {
-    tearDownSparkContext(sparkContext)
-    sparkContext = null
+    sparkSession.close()
   }
 
   /**
@@ -106,10 +134,24 @@ trait SparkUtil {
   }
 
   def ensureCached[T](rdd: RDD[T]): RDD[T] = {
-    if (!rdd.getStorageLevel.useMemory) {
-      throw new Exception("Spark RDD must be cached!")
-    }
-
-    rdd
+    assume(
+      rdd.getStorageLevel == StorageLevel.NONE,
+      "Storage level should be NONE before calling ensureCached()"
+    )
+    rdd.persist(StorageLevel.MEMORY_ONLY)
   }
+
+  def ensureCached[T](ds: Dataset[T]): Dataset[T] = {
+    assume(
+      ds.storageLevel == StorageLevel.NONE,
+      "Storage level should be NONE before calling ensureCached()"
+    )
+    ds.persist(StorageLevel.MEMORY_ONLY)
+  }
+
+  private def setUpLoggers(sparkLevel: Level, jettyLevel: Level) = {
+    Logger.getLogger("org.apache.spark").setLevel(sparkLevel)
+    Logger.getLogger("org.eclipse.jetty.server").setLevel(jettyLevel)
+  }
+
 }

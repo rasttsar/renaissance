@@ -5,22 +5,12 @@ jobs:
     strategy:
       matrix:
         image:
-          - renaissancebench/buildenv:openjdk8
-          - renaissancebench/buildenv:openjdk10
-          - renaissancebench/buildenv:openjdk11
-          - renaissancebench/buildenv:openj9-openjdk11
-          - openjdk:8-jdk
-          - openjdk:10.0.2-jdk
-          - openjdk:11.0.11-jdk
-          - adoptopenjdk:11.0.10_9-jdk-openj9-0.24.0
-          #- openjdk:12.0.2-jdk
-          #- openjdk:13.0.2-jdk
-          #- openjdk:14.0.2-jdk
-          #- openjdk:15.0.2-jdk
-          #- openjdk:16.0.1-jdk
-          #- openjdk:17-jdk
+          - openjdk8
+          - openjdk10
+          - openjdk11
+          - openj9-openjdk11
     runs-on: ubuntu-latest
-    container: ${{ matrix.image }}
+    container: "renaissancebench/buildenv:${{ matrix.image }}"
     continue-on-error: true
     steps:
       - name: Git checkout

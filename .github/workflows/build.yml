@@ -5,6 +5,7 @@ jobs:
     strategy:
       matrix:
         image:
+          - vhotspur/buildenv:jdk9
           - openjdk:8-jdk
           - openjdk:10.0.2-jdk
           - openjdk:11.0.11-jdk

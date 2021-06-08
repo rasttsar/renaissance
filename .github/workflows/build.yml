@@ -68,10 +68,6 @@ jobs:
             ~/.sbt
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
 
-      - name: Install dependencies
-        shell: bash
-        run: "tools/ci/install-deps.sh"
-
       - name: Environment configuration
         shell: bash
         run: "tools/ci/show-env.sh"

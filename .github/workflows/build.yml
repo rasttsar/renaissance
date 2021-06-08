@@ -1,6 +1,45 @@
 name: build
 on: [push, pull_request]
 jobs:
+  checks:
+    runs-on: ubuntu-latest
+    container: "renaissancebench/buildenv:openjdk8"
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Cache SBT
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+      - name: Check file encoding"
+        shell: bash
+        run: tools/ci/check-encoding.sh
+
+      - name: "Start SBT"
+        shell: bash
+        run: tools/ci/check-sbt.sh
+
+      - name: "Check source code formatting"
+        shell: bash
+        run: tools/ci/check-formatting.sh
+
+      - name: "Build default JAR"
+        shell: bash
+        run: tools/ci/build-base.sh
+
+      - name: "Stop SBT"
+        shell: bash
+        run: tools/ci/stop-sbt.sh
+
+      - name: "Check generated files are up-to-date"
+        shell: bash
+        run: tools/ci/check-markdown.sh
+
   linux:
     strategy:
       matrix:

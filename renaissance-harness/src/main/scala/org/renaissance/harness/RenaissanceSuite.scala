@@ -20,8 +20,8 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.function.ToIntFunction
+import scala.collection.JavaConverters._
 import scala.collection._
-import scala.jdk.CollectionConverters._
 
 object RenaissanceSuite {
 
@@ -198,7 +198,7 @@ object RenaissanceSuite {
       var nanosAfter = System.nanoTime()
 
       do {
-        nanosBefore = nanosAfter
+        nanosBefore = nanosAfter;
         currentMillis = System.currentTimeMillis()
         nanosAfter = System.nanoTime()
       } while (currentMillis == lastMillis)

@@ -17,8 +17,8 @@ import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.util.function.Predicate
 import scala.collection.SortedMap
+import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -167,7 +167,7 @@ object MarkdownGenerator {
 
       try {
         writer.write(value)
-        println(file + " updated.")
+        println(file + " updated.");
 
       } finally {
         writer.close()
@@ -181,25 +181,7 @@ object MarkdownGenerator {
   }
 
   private def formatBenchmarkListMarkdown(benchmarks: Seq[BenchmarkDescriptor]) = {
-    def formatItem(b: BenchmarkDescriptor) = {
-      s"- `${b.name}` - ${b.summary}\n  \\\n  " +
-        s"Default repetitions: ${b.repetitions}; " +
-        s"${b.licenses.asScala.mkString(", ")} license, ${b.distro} distribution; " +
-        s"Supported JVM: ${b.jvmVersionMin.map[String](_.toString).orElse("1.8")} " +
-        s"${b.jvmVersionMax.map[String]("- " + _.toString).orElse("and later")}"
-    }
-
-    val result = new StringBuffer
-    SortedMap.from(benchmarks.sortBy(_.name()).groupBy(_.primaryGroup()).toSeq).foreach {
-      entry =>
-        {
-          val (group, benches) = entry
-          result.append(s"#### $group").append("\n\n")
-          result.append(benches.map(formatItem).mkString("\n\n")).append("\n\n")
-        }
-    }
-
-    result.toString
+    "skipped MD"
   }
 
   def formatReadme(tags: Map[String, String]): String = {

@@ -16,11 +16,10 @@ import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.TimeZone
+import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
 
-/**
- * Provides common functionality for JSON and CSV result writers.
+/** Provides common functionality for JSON and CSV result writers.
  *
  * Registers a shutdown hook to avoid losing unsaved results in case
  * the JVM is forcefully terminated.
@@ -179,7 +178,7 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
 
     os match {
       case unixOs: UnixOperatingSystemMXBean =>
-        result ++= Seq(
+        result += (
           "phys_mem_total" -> unixOs.getTotalPhysicalMemorySize.toJson,
           "phys_mem_free" -> unixOs.getFreePhysicalMemorySize.toJson,
           "virt_mem_committed" -> unixOs.getCommittedVirtualMemorySize.toJson,

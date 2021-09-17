@@ -21,7 +21,7 @@ val renaissanceBenchmarks = for {
   // Hint: add .filter(Seq("group1", "group2").contains(_)) to compile
   // selected benchmark groups only (this can significantly speed-up
   // compilation/assembly when debugging the harness).
-  dir <- file("benchmarks").list()
+  dir <- file("benchmarks").list().filter(Seq("dummy", "database").contains(_))
   benchDir = file("benchmarks") / dir
   if dir != null && (benchDir / "build.sbt").exists()
 } yield {

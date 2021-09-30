@@ -16,8 +16,9 @@ import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.TimeZone
-import scala.collection.JavaConverters._
+import scala.util.Try
 import scala.collection.mutable
+import scala.collection.JavaConverters._
 
 /** Provides common functionality for JSON and CSV result writers.
  *
@@ -156,7 +157,13 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
 
   private def systemPropertyAsJson(name: String) = Option(System.getProperty(name)).toJson
 
-  private def pathsAsJson(pathSpec: String) = pathSpec.split(File.pathSeparator).toJson
+  private def pathsAsJson(pathSpec: String) = {
+    if (pathSpec != null) {
+      pathSpec.split(File.pathSeparator).toJson
+    } else {
+      Array.empty[String].toJson
+    }
+  }
 
   private def getEnvironment(normalTermination: Boolean) = {
     Map(
@@ -178,14 +185,17 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
 
     os match {
       case unixOs: UnixOperatingSystemMXBean =>
-        result += (
-          "phys_mem_total" -> unixOs.getTotalPhysicalMemorySize.toJson,
-          "phys_mem_free" -> unixOs.getFreePhysicalMemorySize.toJson,
-          "virt_mem_committed" -> unixOs.getCommittedVirtualMemorySize.toJson,
-          "swap_space_total" -> unixOs.getTotalSwapSpaceSize.toJson,
-          "swap_space_free" -> unixOs.getFreeSwapSpaceSize.toJson,
-          "max_fd_count" -> unixOs.getMaxFileDescriptorCount.toJson,
-          "open_fd_count" -> unixOs.getOpenFileDescriptorCount.toJson
+        // Gag possible exceptions.
+        Try(
+          result ++= Seq(
+            "phys_mem_total" -> unixOs.getTotalPhysicalMemorySize.toJson,
+            "phys_mem_free" -> unixOs.getFreePhysicalMemorySize.toJson,
+            "virt_mem_committed" -> unixOs.getCommittedVirtualMemorySize.toJson,
+            "swap_space_total" -> unixOs.getTotalSwapSpaceSize.toJson,
+            "swap_space_free" -> unixOs.getFreeSwapSpaceSize.toJson,
+            "max_fd_count" -> unixOs.getMaxFileDescriptorCount.toJson,
+            "open_fd_count" -> unixOs.getOpenFileDescriptorCount.toJson
+          )
         )
 
       // No extra information to collect on non-Unix systems.

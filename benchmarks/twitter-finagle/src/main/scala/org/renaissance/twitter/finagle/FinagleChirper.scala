@@ -169,7 +169,7 @@ final class FinagleChirper extends Benchmark {
       }
   }
 
-  class Cache(private val index: Int, private val service: Service[Request, Response])
+  class Cache(private val index: Int, private val target: Service[Request, Response])
     extends Service[Request, Response] {
     private val cache = new concurrent.TrieMap[String, Buf]
     private val count = new AtomicInteger
@@ -187,7 +187,7 @@ final class FinagleChirper extends Benchmark {
           Future.value(response)
         case None =>
           val request = Request(Method.Get, "/api/feed?username=" + username)
-          val responseFuture = service(request)
+          val responseFuture = target(request)
           for (response <- responseFuture) yield {
             cache(username) = response.content
             response

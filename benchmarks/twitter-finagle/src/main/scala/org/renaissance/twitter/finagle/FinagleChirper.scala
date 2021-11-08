@@ -356,6 +356,10 @@ final class FinagleChirper extends Benchmark {
     }
   }
 
+  private def getListeningServerPort(server: ListeningServer): Int = {
+    server.boundAddress.asInstanceOf[InetSocketAddress].getPort
+  }
+
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     requestCountParam = c.parameter("request_count").toPositiveInteger
     val userCountParam = c.parameter("user_count").toPositiveInteger
@@ -369,10 +373,10 @@ final class FinagleChirper extends Benchmark {
     Implement an unified mechanism of assigning ports to benchmarks.
     Related to https://github.com/D-iii-S/renaissance-benchmarks/issues/13
      */
-    masterPort = master.boundAddress.asInstanceOf[InetSocketAddress].getPort
+    masterPort = getListeningServerPort(master)
     for (i <- 0 until cacheCount) {
       caches += Http.serve(":0", new Cache(i, Http.newService(":" + masterPort)))
-      cachePorts += caches.last.boundAddress.asInstanceOf[InetSocketAddress].getPort
+      cachePorts += getListeningServerPort(caches.last)
     }
     println("Master port: " + masterPort)
     println("Cache ports: " + cachePorts.mkString(", "))

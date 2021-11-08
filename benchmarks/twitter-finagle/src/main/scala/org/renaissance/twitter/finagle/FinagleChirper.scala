@@ -157,7 +157,7 @@ final class FinagleChirper extends Benchmark {
           case "/api/reset" =>
             feeds.clear()
             for (username <- userNames) {
-              val hash = byteswap32(username.length + username.charAt(0))
+              val hash = byteswap32(username.length + username.head)
               val offset = math.abs(hash) % (messages.length - startingFeedSize)
               val startingMessages = messages.slice(offset, offset + startingFeedSize)
               feeds(username) = startingMessages.to(mutable.ArrayBuffer)
@@ -246,7 +246,7 @@ final class FinagleChirper extends Benchmark {
         Http.newService(":" + cachePort)
       }
       val feedQuery = "/api/feed?username=" + username
-      val offset = byteswap32(username.charAt(username.length - 1))
+      val offset = byteswap32(username.last)
       var i = 0
       while (i < requestCountParam) {
         val uid = math.abs(byteswap32(offset * i))

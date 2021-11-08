@@ -1,7 +1,5 @@
 package org.renaissance.twitter.finagle
 
-import com.google.common.collect.ConcurrentHashMultiset
-import com.google.common.collect.Multiset.Entry
 import com.twitter.finagle.Http
 import com.twitter.finagle.ListeningServer
 import com.twitter.finagle.Service
@@ -27,9 +25,7 @@ import java.net.InetSocketAddress
 import java.net.URLEncoder
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-import java.util.Comparator
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 import scala.collection._
 import scala.collection.parallel.CollectionConverters._
 import scala.io.Source
@@ -53,75 +49,23 @@ final class FinagleChirper extends Benchmark {
     var requestCount = 0
     var postCount = 0
 
-    def analyze[T](feed: SeqView[String], zero: T, f: String => T, op: (T, T) => T): T = {
-      val a = new Accumulator(zero)(op)
-      for (msg <- feed) a.accumulate(f(msg))
-      a.get()
-    }
-
-    def longestMessageInFeed(feed: SeqView[String]): String = {
-      analyze[String](feed, "", x => x, (x, y) => if (x.length > y.length) x else y)
-    }
+    val stringMaxOp = (x: String, y: String) => if (x.length > y.length) x else y
 
     def longestMessageInAllFeeds(allFeeds: Seq[SeqView[String]]): String = {
-      var result = ""
-      for (feed <- allFeeds) {
-        val r = longestMessageInFeed(feed)
-        if (r.length > result.length) result = r
-      }
-      result
+      allFeeds.par.flatten.fold("")(stringMaxOp)
     }
 
     def hashStartCountInAllFeeds(allFeeds: Seq[IndexedSeqView[String]]): Long = {
-      var result = 0L
-      for (feed <- allFeeds) {
-        result += analyze[Long](
-          feed,
-          0,
-          s => {
-            if (s.length > 0 && s.charAt(0) == '#') 1 else 0
-          },
-          _ + _
-        )
-      }
-      result
+      // If we really need Long instead of Int, we can start summing ones.
+      allFeeds.par.flatten.count(_.startsWith("#"))
     }
 
     def longestRechirpInAllFeeds(allFeeds: Seq[SeqView[String]]): String = {
-      var result = ""
-      for (feed <- allFeeds) {
-        val s = analyze[String](
-          feed,
-          "",
-          s => {
-            if (s.length >= 2 && s.charAt(0) == 'R' && s.charAt(1) == 'T') s else ""
-          },
-          (x, y) => {
-            if (x.length > y.length) x else y
-          }
-        )
-        if (s.length > result.length) result = s
-      }
-      result
+      allFeeds.par.flatten.filter(_.startsWith("RT")).fold("")(stringMaxOp)
     }
 
     def mostRechirpsInAllFeeds(allFeeds: Seq[(String, SeqView[String])]): Long = {
-      val counts = ConcurrentHashMultiset.create[String]()
-      allFeeds.par.foreach {
-        case (username, feed) =>
-          for (s <- feed) {
-            if (s.length >= 2 && s.charAt(0) == 'R' && s.charAt(1) == 'T')
-              counts.add(username)
-          }
-      }
-
-      counts
-        .entrySet()
-        .parallelStream()
-        .map[Integer]((t: Entry[String]) => t.getCount)
-        .max(Comparator.naturalOrder[Integer]())
-        .get
-        .toLong
+      allFeeds.par.map { case (_, feed) => feed.count(_.startsWith("RT")) }.max
     }
 
     override def apply(req: Request): Future[Response] =
@@ -342,18 +286,6 @@ final class FinagleChirper extends Benchmark {
     }
   }
 
-  class Accumulator[T](zero: T)(val operator: (T, T) => T) {
-    private val value = new AtomicReference[T](zero)
-
-    def get(): T = value.get()
-
-    def accumulate(x: T): Unit = {
-      val ov = value.get()
-      val nv = operator(ov, x)
-      value.compareAndSet(ov, nv)
-    }
-  }
-
   // Start with / so it is treated as an absolute path
   // (here, "/" is platform independent according to the JavaDoc)
   val inputFile = "/new-years-resolution.csv"
@@ -364,9 +296,9 @@ final class FinagleChirper extends Benchmark {
   val invalidationPeriodicity: Int = 256
   val statisticsPeriodicity: Int = 19
   val batchSize = 4
-  var master: ListeningServer = null
+  var master: ListeningServer = _
   var masterPort: Int = -1
-  var masterService: Service[Request, Response] = null
+  var masterService: Service[Request, Response] = _
   val clientCount = Runtime.getRuntime.availableProcessors
   val cacheCount = Runtime.getRuntime.availableProcessors
   val caches = new mutable.ArrayBuffer[ListeningServer]

@@ -196,7 +196,7 @@ final class FinagleChirper extends Benchmark {
     }
   }
 
-  class Client(private val username: String) extends Thread {
+  class Client(private val username: String, private val requestCount: Int) extends Thread {
     private var digest = 0
     private var postCount = 0
 
@@ -248,7 +248,7 @@ final class FinagleChirper extends Benchmark {
       val feedQuery = "/api/feed?username=" + username
       val offset = byteswap32(username.last)
       var i = 0
-      while (i < requestCountParam) {
+      while (i < requestCount) {
         val uid = math.abs(byteswap32(offset * i))
         if (uid % postPeriodicity == 0) {
           postCount += 1
@@ -384,7 +384,7 @@ final class FinagleChirper extends Benchmark {
   override def run(c: BenchmarkContext): BenchmarkResult = {
     val clients =
       for (i <- 0 until clientCount)
-        yield new Client(userNames(i % userNames.length) + i)
+        yield new Client(userNames(i % userNames.length) + i, requestCountParam)
     clients.foreach(_.start())
     clients.foreach(_.join())
 

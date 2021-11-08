@@ -44,12 +44,12 @@ import scala.util.hashing.byteswap32
 final class FinagleChirper extends Benchmark {
 
   class Master extends Service[Request, Response] {
-    val lock = new AnyRef
-    val feeds = new concurrent.TrieMap[String, mutable.ArrayBuffer[String]]
-    var requestCount = 0
-    var postCount = 0
+    private val lock = new AnyRef
+    private val feeds = new concurrent.TrieMap[String, mutable.ArrayBuffer[String]]
+    private var requestCount = 0
+    private var postCount = 0
 
-    val stringMaxOp = (x: String, y: String) => if (x.length > y.length) x else y
+    private val stringMaxOp = (x: String, y: String) => if (x.length > y.length) x else y
 
     def longestMessageInAllFeeds(allFeeds: Seq[SeqView[String]]): String = {
       allFeeds.par.flatten.fold("")(stringMaxOp)
@@ -169,10 +169,10 @@ final class FinagleChirper extends Benchmark {
       }
   }
 
-  class Cache(val index: Int, val service: Service[Request, Response])
+  class Cache(private val index: Int, private val service: Service[Request, Response])
     extends Service[Request, Response] {
-    val cache = new concurrent.TrieMap[String, Buf]
-    val count = new AtomicInteger
+    private val cache = new concurrent.TrieMap[String, Buf]
+    private val count = new AtomicInteger
 
     override def apply(req: Request): Future[Response] = {
       val uid = math.abs((index * count.incrementAndGet()).toDouble.hashCode)
@@ -196,11 +196,11 @@ final class FinagleChirper extends Benchmark {
     }
   }
 
-  class Client(val username: String) extends Thread {
-    var digest = 0
-    var postCount = 0
+  class Client(private val username: String) extends Thread {
+    private var digest = 0
+    private var postCount = 0
 
-    val statVariants = Seq[(Int, Service[Request, Response] => Unit)](
+    private val statVariants = Seq[(Int, Service[Request, Response] => Unit)](
       (
         20,
         master => {
@@ -235,7 +235,7 @@ final class FinagleChirper extends Benchmark {
       )
     )
 
-    val statMultiplicities: Seq[Service[Request, Response] => Unit] = for {
+    private val statMultiplicities: Seq[Service[Request, Response] => Unit] = for {
       (m, s) <- statVariants
       v <- Seq.fill(m)(s)
     } yield v

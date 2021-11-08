@@ -375,14 +375,6 @@ final class FinagleChirper extends Benchmark {
     masterService = Http.newService(":" + masterPort)
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
-    for (cache <- caches) {
-      Await.ready(cache.close())
-    }
-    Await.ready(master.close())
-    Await.ready(masterService.close())
-  }
-
   override def setUpBeforeEach(c: BenchmarkContext): Unit = {
     val resetQuery = "/api/reset"
     val request = Request(Method.Get, resetQuery)
@@ -398,6 +390,15 @@ final class FinagleChirper extends Benchmark {
 
     // TODO: add proper validation
     Validators.dummy()
+  }
+
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
+    for (cache <- caches) {
+      Await.ready(cache.close())
+    }
+
+    Await.ready(master.close())
+    Await.ready(masterService.close())
   }
 
   private def resourceAsLines(resourceName: String) = {

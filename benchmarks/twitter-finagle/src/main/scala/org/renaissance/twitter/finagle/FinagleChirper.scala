@@ -269,7 +269,7 @@ final class FinagleChirper extends Benchmark {
         } else {
           // Fetch a few feeds.
           val request = Request(Method.Get, feedQuery)
-          val responses = for (i <- 0 until batchSize) yield {
+          val responses = for (_ <- 0 until batchSize) yield {
             val feedService = feeds(uid % cacheCount)
             val response: Future[Response] = feedService.apply(request)
             response

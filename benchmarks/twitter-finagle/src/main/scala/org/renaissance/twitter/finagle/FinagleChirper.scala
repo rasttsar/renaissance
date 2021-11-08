@@ -350,13 +350,17 @@ final class FinagleChirper extends Benchmark {
 
   private var userNames: Seq[String] = _
 
+  private def makeNames(baseNames: Seq[String], count: Int) = {
+    for (i <- 0 until count) yield {
+      baseNames(i % baseNames.length) + i
+    }
+  }
+
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     requestCountParam = c.parameter("request_count").toPositiveInteger
     val userCountParam = c.parameter("user_count").toPositiveInteger
 
-    userNames =
-      for (i <- 0 until userCountParam)
-        yield usernameBases(i % usernameBases.length) + i
+    userNames = makeNames(usernameBases, userCountParam)
 
     messages = resourceAsLines(inputFile)
 
@@ -382,9 +386,10 @@ final class FinagleChirper extends Benchmark {
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    val clients =
-      for (i <- 0 until clientCount)
-        yield new Client(userNames(i % userNames.length) + i, requestCountParam)
+    val clients = makeNames(userNames, clientCount).map { userName =>
+      new Client(userName, requestCountParam)
+    }
+
     clients.foreach(_.start())
     clients.foreach(_.join())
 
